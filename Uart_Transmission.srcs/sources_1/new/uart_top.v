@@ -9,6 +9,7 @@ module uart_top #
 (
     sys_clk, sys_rstn,
     tx, rx,
+    tx_en,
     rx_data, tx_data,
     rx_data_ready, tx_data_locked
 );
