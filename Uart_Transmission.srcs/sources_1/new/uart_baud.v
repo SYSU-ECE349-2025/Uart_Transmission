@@ -1,10 +1,10 @@
 module uart_baud #
 (
-    parameter BAUD                = 9600,    // 波特率9600bps
-    parameter BAUD_FACTOR         = 5208,    // 50MHZ时钟下波特率的分频系数
-    parameter BAUD_FACTOR_HALF    = 2604,    // 电平中间采样点的计数分频值
-    parameter SAMPLE_FACTOR       = 326,     // 16倍于波特率的采样时钟的分频系数
-    parameter SAMPLE_FACTOR_HALF  = 163      // 16倍于波特率的采样时钟的分频系数的一半
+    parameter BAUD                = 115200,  // 波特率115200bps
+    parameter BAUD_FACTOR         = 217,     // 25MHz时钟下波特率的分频系数
+    parameter BAUD_FACTOR_HALF    = 109,     // 电平中间采样点的计数分频值
+    parameter SAMPLE_FACTOR       = 14,      // 16倍于波特率的采样时钟的分频系数
+    parameter SAMPLE_FACTOR_HALF  = 7        // 16倍于波特率的采样时钟的分频系数的一半
 )
 (
     sys_clk, sys_rstn, bps_start, clk_bps, clk_16x

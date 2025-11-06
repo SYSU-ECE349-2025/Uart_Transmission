@@ -1,10 +1,10 @@
 module uart_top #
 (
-    parameter BAUD                = 9600, // 波特率9600bps
-    parameter BAUD_FACTOR         = 2604, // 25时钟下波特率的分频系数MHz
-    parameter BAUD_FACTOR_HALF    = 1302, // 电平中间采样的计数分频值
-    parameter SAMPLE_FACTOR       = 163,  // 倍于波特率的采样时钟的分频系数16
-    parameter SAMPLE_FACTOR_HALF  = 82    // 倍于波特率的采样时钟的分频系数的一半16
+    parameter BAUD                = 115200, // 波特率115200bps
+    parameter BAUD_FACTOR         = 217,    // 25MHz时钟下波特率的分频系数
+    parameter BAUD_FACTOR_HALF    = 109,    // 电平中间采样点的计数分频值
+    parameter SAMPLE_FACTOR       = 14,     // 倍于波特率的采样时钟的分频系数16
+    parameter SAMPLE_FACTOR_HALF  = 7       // 倍于波特率的采样时钟的分频系数的一半16
 )
 (
     sys_clk, sys_rstn,

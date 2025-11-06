@@ -53,7 +53,13 @@ module top_pc1(sys_clk, tx, rx);
         end
     end
     // ´®¿ÚÄ£¿é
-    uart_top u1_uart_top1(
+    uart_top #(
+        .BAUD(BAUD),
+        .BAUD_FACTOR(BAUD_FACTOR),
+        .BAUD_FACTOR_HALF(BAUD_FACTOR_HALF),
+        .SAMPLE_FACTOR(SAMPLE_FACTOR),
+        .SAMPLE_FACTOR_HALF(SAMPLE_FACTOR_HALF)
+    ) u1_uart_top1(
         .sys_clk(sys_clk),
         .sys_rstn(sys_rstn),
         .tx(tx),
