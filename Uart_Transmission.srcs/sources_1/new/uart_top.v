@@ -17,18 +17,18 @@ module uart_top #
     // 端口定义
     input sys_clk;              // 系统时钟，25MHz
     input sys_rstn;             // 全局复位信号
-    input rx;                   // 串行输入端口
-    input tx_en;                // 帧发送信号
-    output wire tx;             // 串行输出端口
-    output wire [7:0] rx_data;  // 接收数据
-    input wire [7:0] tx_data;   // 传输数据
-    output wire rx_data_ready;  // 接收完成指示
-    output wire tx_data_locked; // 发送数据锁定指示
+    (*mark_debug="true"*) input rx;                   // 串行输入端口
+    (*mark_debug="true"*) input tx_en;                // 帧发送信号
+    (*mark_debug="true"*) output wire tx;             // 串行输出端口
+    (*mark_debug="true"*) output wire [7:0] rx_data;  // 接收数据
+    (*mark_debug="true"*) input wire [7:0] tx_data;   // 传输数据
+    (*mark_debug="true"*) output wire rx_data_ready;  // 接收完成指示
+    (*mark_debug="true"*) output wire tx_data_locked; // 发送数据锁定指示
     
     // 变量定义
-    wire bps_start_rx, bps_start_tx;
-    wire clk_bps_rx, clk_bps_tx;
-    wire clk16x_rx, clk16x_tx;
+    (*mark_debug="true"*) wire bps_start_rx, bps_start_tx;
+    (*mark_debug="true"*) wire clk_bps_rx, clk_bps_tx;
+    (*mark_debug="true"*) wire clk16x_rx, clk16x_tx;
     
     // 接收端波特率发生器
     uart_baud #
