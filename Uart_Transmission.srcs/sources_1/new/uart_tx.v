@@ -27,9 +27,7 @@ module uart_tx #
     reg  [2:0] tx_nstate;      // 状态寄存器变量
     reg  [3:0] data_num;       // 传输数据发送位计数
     reg  [31:0] baud_cnt;      // 波特率计数
-    reg  tx_en_reg;
-    wire tx_en_fall;
-    wire tx_en_rise;
+    reg  [DATA_BIT-1:0] tx_data_buf;
 
     // 参数定义
     localparam DATA_BIT = 8;
@@ -38,36 +36,159 @@ module uart_tx #
     localparam DATA     = 3'b010;
     localparam PARITY   = 3'b011;
     localparam DONE     = 3'b100;
-
-    // 下降沿检测
-    always@(posedge uart_clk or negedge sys_rstn) begin
-        if(!sys_rstn) begin
-            tx_en_reg <= 1'b1;
-        end
-        else begin
-            tx_en_reg <= tx_en;
-        end
-    end
-
-    assign tx_en_fall = ((!tx_en) && (tx_en_reg));
-    assign tx_en_rise = ((tx_en) && (!tx_en_reg));
+    localparam integer BAUD_EDGE = (BAUD_FACTOR > 0) ? (BAUD_FACTOR - 1) : 0;
 
     // 状态跳转
     always@(posedge uart_clk or negedge sys_rstn) begin
-        [代码请自行完成
-        ]
+        if(!sys_rstn) begin
+            tx_cstate <= IDLE;
+        end
+        else begin
+            tx_cstate <= tx_nstate;
+        end
     end
 
     // 转移条件
     always@(*) begin
-        [代码请自行完成
-        ]
+        tx_nstate = tx_cstate;
+        case(tx_cstate)
+            IDLE: begin
+                if(!tx_en) begin
+                    tx_nstate = START;
+                end
+                else begin
+                    tx_nstate = IDLE;
+                end
+            end
+            START: begin
+                if(baud_cnt == BAUD_EDGE) begin
+                    tx_nstate = DATA;
+                end
+                else begin
+                    tx_nstate = START;
+                end
+            end
+            DATA: begin
+                if(baud_cnt == BAUD_EDGE) begin
+                    if(data_num == DATA_BIT - 1) begin
+                        tx_nstate = (PARITY_EN) ? PARITY : DONE;
+                    end
+                    else begin
+                        tx_nstate = DATA;
+                    end
+                end
+                else begin
+                    tx_nstate = DATA;
+                end
+            end
+            PARITY: begin
+                if(baud_cnt == BAUD_EDGE) begin
+                    tx_nstate = DONE;
+                end
+                else begin
+                    tx_nstate = PARITY;
+                end
+            end
+            DONE: begin
+                if(baud_cnt == BAUD_EDGE) begin
+                    tx_nstate = IDLE;
+                end
+                else begin
+                    tx_nstate = DONE;
+                end
+            end
+            default: begin
+                tx_nstate = IDLE;
+            end
+        endcase
     end
 
     // 状态机逻辑
     always@(posedge uart_clk or negedge sys_rstn) begin
-        [代码请自行完成
-        ]
+        if(!sys_rstn) begin
+            data_num   <= 0;
+            baud_cnt   <= 0;
+            tx_data_buf<= 0;
+            tx         <= 1'b1;
+            tx_start   <= 1'b1;
+            tx_done    <= 1'b0;
+            odd_parity <= 1'b0;
+            even_parity<= 1'b0;
+        end
+        else begin
+            case(tx_cstate)
+                IDLE: begin
+                    baud_cnt <= 0;
+                    data_num <= 0;
+                    tx       <= 1'b1;
+                    tx_start <= 1'b1;
+                    tx_done  <= 1'b0;
+                    if(!tx_en) begin
+                        tx_data_buf <= tx_data;
+                        odd_parity  <= ~(^tx_data);
+                        even_parity <=  ^tx_data;
+                    end
+                end
+                START: begin
+                    tx_start <= 1'b0;
+                    tx_done  <= 1'b0;
+                    tx       <= 1'b0;
+                    if(baud_cnt == BAUD_EDGE) begin
+                        baud_cnt <= 0;
+                    end
+                    else begin
+                        baud_cnt <= baud_cnt + 1;
+                    end
+                end
+                DATA: begin
+                    tx_start <= 1'b0;
+                    tx_done  <= 1'b0;
+                    tx       <= tx_data_buf[data_num];
+                    if(baud_cnt == BAUD_EDGE) begin
+                        baud_cnt <= 0;
+                        if(data_num == DATA_BIT - 1) begin
+                            data_num <= 0;
+                        end
+                        else begin
+                            data_num <= data_num + 1;
+                        end
+                    end
+                    else begin
+                        baud_cnt <= baud_cnt + 1;
+                    end
+                end
+                PARITY: begin
+                    tx_start <= 1'b0;
+                    tx_done  <= 1'b0;
+                    tx       <= (PARITY_ODDEVEN) ? even_parity : odd_parity;
+                    if(baud_cnt == BAUD_EDGE) begin
+                        baud_cnt <= 0;
+                    end
+                    else begin
+                        baud_cnt <= baud_cnt + 1;
+                    end
+                end
+                DONE: begin
+                    tx_start <= 1'b0;
+                    tx       <= 1'b1;
+                    if(baud_cnt == BAUD_EDGE) begin
+                        baud_cnt <= 0;
+                        tx_done  <= 1'b1;
+                    end
+                    else begin
+                        baud_cnt <= baud_cnt + 1;
+                        tx_done  <= 1'b0;
+                    end
+                end
+                default: begin
+                    tx_start <= 1'b1;
+                    tx_done  <= 1'b0;
+                    baud_cnt <= 0;
+                    data_num <= 0;
+                    tx       <= 1'b1;
+                end
+            endcase
+        end
     end
 
 endmodule
