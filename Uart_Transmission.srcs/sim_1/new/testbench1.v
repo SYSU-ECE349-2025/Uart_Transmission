@@ -10,7 +10,7 @@ module testbench();
     end
     // ´«ÊäUART
     top test_top(.sys_clk(sys_clk), .tx(fpga_tx), .rx(fpga_rx));
-    top_pc1 test_top_pc1(.sys_clk(sys_clk), .tx(pc_tx), .rx(pc_rx));
+    top_pc test_top_pc(.sys_clk(sys_clk), .tx(pc_tx), .rx(pc_rx));
     assign pc_rx = fpga_tx;
     assign fpga_rx = pc_tx;
 endmodule
