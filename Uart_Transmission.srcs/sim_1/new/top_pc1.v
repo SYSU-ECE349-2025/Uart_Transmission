@@ -45,7 +45,7 @@ module top_pc(
         if (!sys_rstn) begin
             tx_en  <= 1'b0;
             tx_cnt <= 8'd0;
-            tx_data <= 8'd0;
+            tx_data <= 8'd16;
         end else begin
             if (tx_done) begin
                 tx_en  <= (tx_cnt >= 8'd15);
