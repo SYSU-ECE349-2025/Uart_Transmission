@@ -1,93 +1,79 @@
-module uart_rx(clk_16x, sys_rstn, rx, clk_bps, bps_start, rx_data, rx_data_ready);
+module uart_rx #
+(
+    parameter  PARITY_EN       = 0,
+    parameter  PARITY_ODDEVEN  = 0,
+    parameter  UART_CLOCK      = 25_000_000,
+    parameter  BAUD            = 115200,           // 波特率
+    parameter  BAUD_FACTOR     = UART_CLOCK / BAUD,   // 系统时钟下该波特率的分频系数
+    parameter  BAUD_FACTOR_HALF = BAUD_FACTOR / 2     // 分频系数的一半
+)
+(
+    uart_clk, sys_rstn, odd_parity, even_parity,
+    rx, rx_data, rx_start, rx_done
+);
     // 端口定义
-    input clk_16x;          // 16倍过采样信号
-    input sys_rstn;         // 全局复位信号
-    input rx;               // 串行输入信号
-    input clk_bps;          // 中间点采样信号
-    output bps_start;       // 采样数据置位信号
-    output [7:0] rx_data;   // 串并转换后的输出寄存器
-    output reg rx_data_ready;// 接收完成指示
-    
+    input  uart_clk;         // 串口时钟
+    input  sys_rstn;         // 复位信号
+    input  rx;               // 串行输入端口
+    output wire [7:0] rx_data; // 接收数据
+    output reg  rx_start;    // 接收开始指示
+    output reg  rx_done;     // 接收完成指示
+    output reg  odd_parity;  // 奇偶指示
+    output reg  even_parity; // 奇偶指示
+
     // 变量定义
-    reg [14:0] rx_r;        // 起始位检测寄存器
-    wire rx_n;              // 起始位有效信号
-    reg [1:0] state;        // 状态寄存器变量
-    reg [7:0] rx_data_r;    // 内部缓冲寄存器, 接受串行数据, 用来给rx_data赋值
-    reg bps_start_r;        // 内部缓冲寄存器, 用来给bps_start赋值
-    reg [3:0] num;          // 内部计数器, 用来确定传送了多少个数据位
-    
+    reg  [7:0] rx_data_reg;
+    reg  [2:0] rx_cstate;    // 状态寄存器变量
+    reg  [2:0] rx_nstate;    // 状态寄存器变量
+    reg  [3:0] data_num;     // 传输数据接收位计数
+    reg  [31:0] baud_cnt;    // 波特率计数
+    reg  rx_reg;
+    wire rx_rise;
+    wire rx_fall;
+
     // 参数定义
-    parameter START = 2'b01;
-    parameter SAMPLE = 2'b10;
-    
-    // 初始化及变量节拍
-    always@(posedge clk_16x or negedge sys_rstn)begin
-        if(!sys_rstn)
-            rx_r <= 15'b0;
-        else
-            rx_r <= {rx_r[13:0], (~rx)};
-    end
-    
-    // 起始位检测
-    assign rx_n = (&rx_r[14:0]);
-    
-    // 接收状态机
-    always@(posedge clk_16x or negedge sys_rstn)begin
-        if(!sys_rstn)begin
-            state <= START;
-            num <= 4'd0;
-            rx_data_r <= 8'd0;
-            rx_data_ready <= 0;
-            bps_start_r <= 1'b0;
+    localparam DATA_BIT = 8;
+    localparam IDLE     = 3'b000;
+    localparam START    = 3'b001;
+    localparam DATA     = 3'b010;
+    localparam PARITY   = 3'b011;
+    localparam DONE     = 3'b100;
+
+    // 下降沿检测
+    always@(posedge uart_clk or negedge sys_rstn) begin
+        if(!sys_rstn) begin
+            rx_reg <= 1'b0;
         end
         else begin
-            case(state)
-                // 接收开始
-                START:
-                    if(rx_n)begin
-                        bps_start_r <= 1'b1;
-                        state <= SAMPLE;
-                    end
-                    else begin
-                        state <= state;
-                        num <= 4'd0;
-                        rx_data_r <= 8'd0;
-                        rx_data_ready <= 0;
-                        bps_start_r <= 1'b0;
-                    end
-                // 进行接收
-                SAMPLE:
-                    if((num == 8) && (clk_bps))begin
-                        bps_start_r <= 1'd0;
-                        state <= START;
-                        num <= 4'd0;
-                        rx_data_ready <= 1;
-                    end
-                    else begin
-                        if(clk_bps)begin
-                            num <= num + 1'd1;
-                            case(num)
-                                4'd0: rx_data_r[0] <= rx;
-                                4'd1: rx_data_r[1] <= rx;
-                                4'd2: rx_data_r[2] <= rx;
-                                4'd3: rx_data_r[3] <= rx;
-                                4'd4: rx_data_r[4] <= rx;
-                                4'd5: rx_data_r[5] <= rx;
-                                4'd6: rx_data_r[6] <= rx;
-                                4'd7: rx_data_r[7] <= rx;
-                                default: rx_data_r <= rx_data_r;
-                            endcase
-                        end
-                        else begin
-                            num <= num;
-                            state <= state;
-                        end
-                    end
-            endcase
+            rx_reg <= rx;
         end
     end
-    
-    assign bps_start = bps_start_r;
-    // 三态门输出接收数据有效
-    assign rx_data = rx_data_ready ? rx_data_r : 8'bz;
+
+    assign rx_fall = ((!rx) && (rx_reg));
+    assign rx_rise = ((rx) && (!rx_reg));
+
+    // 状态跳转
+    always@(posedge uart_clk or negedge sys_rstn) begin
+        [代码请自行完成
+        ]
+
+    end
+
+    // 转移条件
+    always@(*) begin
+
+        [代码请自行完成
+        ]
+
+    end
+
+    // 状态机逻辑
+    always@(posedge uart_clk or negedge sys_rstn) begin
+
+        [代码请自行完成
+        ]
+
+    end
+
+    assign rx_data = (rx_done) ? rx_data_reg : rx_data;
 endmodule
