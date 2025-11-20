@@ -28,6 +28,7 @@ module uart_tx #
     reg  [3:0] data_num;       // 传输数据发送位计数
     reg  [31:0] baud_cnt;      // 波特率计数
     reg  [DATA_BIT-1:0] tx_data_buf;
+    reg  idle_wait;
 
     // 参数定义
     localparam DATA_BIT = 8;
@@ -53,7 +54,10 @@ module uart_tx #
         tx_nstate = tx_cstate;
         case(tx_cstate)
             IDLE: begin
-                if(!tx_en) begin
+                if(idle_wait) begin
+                    tx_nstate = IDLE;
+                end
+                else if(!tx_en) begin
                     tx_nstate = START;
                 end
                 else begin
@@ -114,6 +118,7 @@ module uart_tx #
             tx_done    <= 1'b0;
             odd_parity <= 1'b0;
             even_parity<= 1'b0;
+            idle_wait  <= 1'b1;
         end
         else begin
             case(tx_cstate)
@@ -123,11 +128,12 @@ module uart_tx #
                     tx       <= 1'b1;
                     tx_start <= 1'b1;
                     tx_done  <= 1'b0;
-                    if(!tx_en) begin
+                    if(!idle_wait && !tx_en) begin
                         tx_data_buf <= tx_data;
                         odd_parity  <= ~(^tx_data);
                         even_parity <=  ^tx_data;
                     end
+                    idle_wait <= 1'b0;
                 end
                 START: begin
                     tx_start <= 1'b0;
@@ -188,6 +194,11 @@ module uart_tx #
                     tx       <= 1'b1;
                 end
             endcase
+
+            // 进入IDLE时插入一个等待周期，保证上游完成tx_data更新
+            if(tx_cstate != IDLE && tx_nstate == IDLE) begin
+                idle_wait <= 1'b1;
+            end
         end
     end
 
