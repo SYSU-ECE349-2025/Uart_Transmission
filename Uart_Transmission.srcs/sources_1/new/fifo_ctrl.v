@@ -34,6 +34,7 @@ reg [2:0] rx_cstate, rx_nstate; // 状态机
 reg [2:0] tx_cstate, tx_nstate; // 状态机
 reg [7:0] rx_num, rx_cnt; // 接收数量及接收进度
 reg [7:0] tx_num, tx_cnt; // 发送数量及发送进度
+reg [7:0] rx_total_bytes;
 reg wrong_len;
 
 // 参数定义
@@ -128,16 +129,16 @@ always@(posedge sys_clk or negedge sys_rstn) begin
                     rx_cnt <= 0;
                 end
                 else begin
-                    rx_cnt <= 0;  // 从0开始计数，长度字节不写入FIFO
+                    rx_cnt <= 1;  // 包含长度字节
                     rx_num <= fifo_din;
-                    fifo_wren <= 0;  // 长度字节不写入FIFO
+                    fifo_wren <= 1;  // 将长度字节写入FIFO
                     wrong_len <= 0;
                 end
             end
             RECV: begin
-                if ((rx_done_rise) && (!fifo_full) && (rx_cnt < rx_num)) begin
+                if ((rx_done_rise) && (!fifo_full) && (rx_cnt <= rx_num)) begin
                     rx_cnt <= rx_cnt + 1;
-                    fifo_wren <= 1;  // 只写入数据字节到FIFO
+                    fifo_wren <= 1;  // 写入有效数据
                     wrong_len <= 0;
                 end
                 else begin
@@ -147,6 +148,7 @@ always@(posedge sys_clk or negedge sys_rstn) begin
                 end
             end
             DONE: begin
+                rx_total_bytes <= rx_cnt;
                 rx_cnt <= 0;
                 fifo_wren <= 0;
                 wrong_len <= 0;
@@ -221,26 +223,17 @@ always@(posedge sys_clk or negedge sys_rstn) begin
                     fifo_dout <= fifo_din;
                 end
                 else begin
-                    if (tx_done_rise) begin
-                        tx_cnt <= 0;
-                        fifo_rden <= 0;
-                        tx_num <= 0;
-                        fifo_dout <= fifo_dout_reg;
-                        tx_en <= 1;
+                    tx_num <= rx_total_bytes;
+                    tx_cnt <= 0;
+                    tx_en <= tx_en;
+                    // 当准备跳入SEND状态且队列非空时，预取首字节
+                    if ((tx_nstate == SEND) && (rx_total_bytes != 0)) begin
+                        fifo_rden <= 1;
                     end
                     else begin
-                        tx_num <= rx_num;
-                        tx_cnt <= 0;
-                        tx_en <= tx_en;
-                        // 接收完成后立即读取第一个数据字节
-                        if ((rx_cstate == DONE) && (rx_num != 0)) begin
-                            fifo_rden <= 1;
-                        end
-                        else begin
-                            fifo_rden <= 0;
-                        end
-                        fifo_dout <= fifo_dout_reg;
+                        fifo_rden <= 0;
                     end
+                    fifo_dout <= fifo_dout_reg;
                 end
             end
             SEND: begin
@@ -252,15 +245,7 @@ always@(posedge sys_clk or negedge sys_rstn) begin
                 end
                 else begin
                     if (tx_done_rise) begin
-                        // 本字节发送完成
-                        if (tx_cnt < tx_num) begin
-                            tx_cnt <= tx_cnt + 1;
-                        end
-                        else begin
-                            tx_cnt <= tx_cnt;
-                        end
-
-                        // 如果还有后续字节，拉取下一字节
+                        tx_cnt <= tx_cnt + 1;
                         if (tx_cnt < tx_num - 1) begin
                             fifo_rden <= 1;
                         end
@@ -270,7 +255,6 @@ always@(posedge sys_clk or negedge sys_rstn) begin
                     end
                     else begin
                         fifo_rden <= 0;
-                        tx_cnt <= tx_cnt;
                     end
                 end
             end
