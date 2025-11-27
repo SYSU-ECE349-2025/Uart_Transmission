@@ -183,10 +183,9 @@ always@(*)begin
             end
         end
         SEND: begin
-            // 发送完成后结束：需要发送1个长度字节 + tx_num个数据字节
-            // tx_cnt从0开始：0=长度字节，1到tx_num=数据字节
-            // 当tx_cnt == tx_num + 1时，所有数据发送完成
-            if ((tx_cnt > tx_num) && (tx_done_rise)) begin
+            // 发送完成后结束：当最后一个需要发送的字节发送完成时退出
+            // tx_cnt==0 表示正在发送长度字节；tx_cnt==tx_num 表示最后一个数据字节
+            if ((tx_cnt == tx_num) && (tx_done_rise)) begin
                 tx_nstate = DONE;
             end
             else begin
