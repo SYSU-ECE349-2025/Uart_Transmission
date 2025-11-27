@@ -48,7 +48,7 @@ module top_pc(
             tx_data <= 8'd16;
         end else begin
             if (tx_done) begin
-                tx_en  <= (tx_cnt >= 8'd15);
+                tx_en  <= (tx_cnt >= 8'd16);  // 发送长度+16个数据后再拉高tx_en
                 tx_cnt <= tx_cnt + 1;
                 tx_data <= tx_data + 1;
             end else begin
