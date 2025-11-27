@@ -184,8 +184,8 @@ always@(*)begin
         end
         SEND: begin
             // 发送完成后结束：当最后一个需要发送的字节发送完成时退出
-            // tx_cnt==0 表示正在发送长度字节；tx_cnt==tx_num 表示最后一个数据字节
-            if ((tx_cnt == tx_num) && (tx_done_rise)) begin
+            // tx_cnt表示已经发送完成的数据字节数量
+            if ((tx_num != 0) && (tx_cnt == tx_num - 1) && (tx_done_rise)) begin
                 tx_nstate = DONE;
             end
             else begin
@@ -232,53 +232,46 @@ always@(posedge sys_clk or negedge sys_rstn) begin
                         tx_num <= rx_num;
                         tx_cnt <= 0;
                         tx_en <= tx_en;
-                        fifo_rden <= 0;
-                        fifo_dout <= fifo_dout;
+                        // 接收完成后立即读取第一个数据字节
+                        if ((rx_cstate == DONE) && (rx_num != 0)) begin
+                            fifo_rden <= 1;
+                        end
+                        else begin
+                            fifo_rden <= 0;
+                        end
+                        fifo_dout <= fifo_dout_reg;
                     end
                 end
             end
             SEND: begin
                 tx_en <= 0;
-                // tx_cnt == 0: 发送长度字节（rx_num）
-                // tx_cnt >= 1: 发送FIFO数据字节
-                if (tx_cnt == 0) begin
-                    // 发送长度字节
-                    fifo_dout <= rx_num;
-                    if (tx_done_rise) begin
-                        // 长度字节发送完成，拉取第一个数据字节
-                        fifo_rden <= (tx_num > 0) ? 1 : 0;
-                        tx_cnt <= tx_cnt + 1;
-                    end
-                    else begin
-                        fifo_rden <= 0;
-                        tx_cnt <= tx_cnt;
-                    end
+                fifo_dout <= fifo_dout_reg;
+                if (tx_num == 0) begin
+                    fifo_rden <= 0;
+                    tx_cnt <= 0;
                 end
-                else if (tx_cnt <= tx_num) begin
-                    // 发送数据字节
-                    fifo_dout <= fifo_dout_reg;
+                else begin
                     if (tx_done_rise) begin
+                        // 本字节发送完成
                         if (tx_cnt < tx_num) begin
-                            // 还有数据，读取下一个
-                            fifo_rden <= 1;
                             tx_cnt <= tx_cnt + 1;
                         end
                         else begin
-                            // 最后一个数据字节发送完成
+                            tx_cnt <= tx_cnt;
+                        end
+
+                        // 如果还有后续字节，拉取下一字节
+                        if (tx_cnt < tx_num - 1) begin
+                            fifo_rden <= 1;
+                        end
+                        else begin
                             fifo_rden <= 0;
-                            tx_cnt <= tx_cnt + 1;
                         end
                     end
                     else begin
                         fifo_rden <= 0;
                         tx_cnt <= tx_cnt;
                     end
-                end
-                else begin
-                    // 所有数据发送完成，保持状态
-                    fifo_rden <= 0;
-                    fifo_dout <= fifo_dout_reg;
-                    tx_cnt <= tx_cnt;
                 end
             end
             DONE:begin
